@@ -1,0 +1,996 @@
+<html>
+  <head>
+    <base href="." />
+    <title>Projeto Reuni - Workspace Connection</title>
+    <style>
+      body {
+        margin: 0;
+        padding: 0;
+        height: 100vh;
+        background: #ffffff; /* Changed from gradient to white */
+        font-family: 'Arial', sans-serif;
+      }
+
+      .login-container,
+      .mood-container,
+      .workspace,
+      .dashboard {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background: rgba(255, 255, 255, 0.9);
+        padding: 20px;
+        border-radius: 10px;
+        box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
+        text-align: center;
+        display: none;
+      }
+
+      .login-container.active,
+      .mood-container.active,
+      .workspace.active,
+      .dashboard.active {
+        display: block;
+      }
+
+      .dashboard {
+        width: 80%;
+        max-height: 80vh;
+        overflow-y: auto;
+      }
+
+      .mood-stats {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 25px;
+        padding: 20px;
+      }
+
+      .mood-card {
+        background: white;
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+      }
+
+      .mood-card h3 {
+        margin-top: 0;
+        margin-bottom: 15px;
+        color: #333;
+      }
+
+      .mood-history {
+        padding: 20px;
+        background: #f5f5f5;
+        border-radius: 8px;
+        margin: 20px 0;
+      }
+
+      .mood-history h3 {
+        margin-bottom: 15px;
+        color: #333;
+        font-size: 1.2em;
+      }
+
+      .history-entry {
+        display: grid;
+        grid-template-columns: 120px 60px 120px 180px 1fr;
+        align-items: center;
+        gap: 10px;
+        padding: 12px 20px;
+        border-bottom: 1px solid #eee;
+        background: white;
+        margin: 8px 0;
+        border-radius: 5px;
+      }
+
+      .history-entry strong {
+        font-weight: 600;
+        color: #333;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .history-entry span {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .status-indicator {
+        min-width: 20px;
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        display: inline-block;
+        margin-right: 5px;
+        flex-shrink: 0;
+      }
+
+      .availability-input {
+        display: flex;
+        gap: 15px;
+        margin: 20px 0;
+        justify-content: center;
+      }
+
+      .availability-option {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        cursor: pointer;
+        transition: transform 0.2s;
+        border: 2px solid transparent;
+      }
+
+      .availability-option:hover {
+        transform: scale(1.1);
+      }
+
+      .availability-option.selected {
+        border: 2px solid #333;
+      }
+
+      .productivity-input {
+        display: none; /* Hide old productivity input */
+      }
+
+      .weekly-summary {
+        margin-top: 20px;
+        padding: 15px;
+        background: white;
+        border-radius: 8px;
+      }
+
+      .emoji-picker {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 10px;
+        margin: 20px 0;
+      }
+
+      .emoji-option {
+        font-size: 24px;
+        cursor: pointer;
+        padding: 5px;
+        border-radius: 5px;
+        transition: background-color 0.3s;
+      }
+
+      .emoji-option:hover {
+        background-color: #eee;
+      }
+
+      input,
+      button {
+        display: block;
+        width: 100%;
+        margin: 10px 0;
+        padding: 10px;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+      }
+
+      button {
+        background: #4caf50;
+        color: white;
+        border: none;
+        cursor: pointer;
+      }
+
+      button:hover {
+        background: #45a049;
+      }
+
+      .manager-button {
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        z-index: 1000;
+      }
+
+      .weekly-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 20px 0;
+        background: white;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+      }
+
+      .weekly-table th,
+      .weekly-table td {
+        padding: 12px;
+        text-align: left;
+        border: 1px solid #ddd;
+      }
+
+      .weekly-table th {
+        background: #f5f5f5;
+        font-weight: bold;
+      }
+
+      .weekly-table tr:hover {
+        background-color: #f9f9f9;
+      }
+
+      .mood-cell {
+        font-size: 1.2em;
+      }
+
+      .productivity-cell {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+      }
+
+      .productivity-bar {
+        height: 10px;
+        background: #4caf50;
+        border-radius: 5px;
+      }
+
+      #moodDistribution,
+      #productivityTrend {
+        width: 100%;
+        display: flex;
+        justify-content: center;
+        margin-top: 10px;
+      }
+
+      .participant {
+        position: absolute;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 5px;
+        transition: all 0.3s ease;
+      }
+
+      .status-ring {
+        position: absolute;
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        border: 3px solid transparent;
+        top: -5px;
+        left: -5px;
+      }
+
+      .status-ring.available {
+        border-color: #4caf50;
+      }
+
+      .status-ring.busy {
+        border-color: #f44336;
+      }
+
+      .status-ring.away {
+        border-color: #ff9800;
+      }
+
+      .avatar {
+        width: 50px;
+        height: 50px;
+        position: relative;
+        z-index: 1;
+      }
+
+      .emoji {
+        font-size: 24px;
+        margin-top: 5px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="login-container active">
+      <h2>Login Reuni</h2>
+      <input type="text" id="username" placeholder="Username" />
+      <input type="password" id="password" placeholder="Password" />
+      <button onclick="login()">Entrar</button>
+    </div>
+
+    <div class="mood-container">
+      <h2>Como você está hoje?</h2>
+      <div class="emoji-picker">
+        <div class="emoji-option" onclick="selectMood('😊')">😊</div>
+        <div class="emoji-option" onclick="selectMood('😐')">😐</div>
+        <div class="emoji-option" onclick="selectMood('😢')">😢</div>
+        <div class="emoji-option" onclick="selectMood('😴')">😴</div>
+        <div class="emoji-option" onclick="selectMood('🤩')">🤩</div>
+        <div class="emoji-option" onclick="selectMood('😤')">😤</div>
+        <div class="emoji-option" onclick="selectMood('🤓')">🤓</div>
+        <div class="emoji-option" onclick="selectMood('😎')">😎</div>
+      </div>
+      <div class="availability-input">
+        <div
+          class="availability-option"
+          style="background-color: #4caf50"
+          onclick="selectAvailability('available')"
+        ></div>
+        <div
+          class="availability-option"
+          style="background-color: #f44336"
+          onclick="selectAvailability('busy')"
+        ></div>
+        <div
+          class="availability-option"
+          style="background-color: #ff9800"
+          onclick="selectAvailability('away')"
+        ></div>
+      </div>
+    </div>
+
+    <div class="workspace"></div>
+
+    <div class="dashboard">
+      <h2>Dashboard de Bem-estar</h2>
+      <div class="mood-stats">
+        <div class="mood-card">
+          <h3>Humor Geral da Semana</h3>
+          <div id="generalMood"></div>
+        </div>
+        <div class="mood-card">
+          <h3>Produtividade Média</h3>
+          <div id="productivityStats"></div>
+        </div>
+        <div class="mood-card">
+          <h3>Distribuição de Humor</h3>
+          <div id="moodDistribution"></div>
+        </div>
+        <div class="mood-card">
+          <h3>Tendência de Produtividade</h3>
+          <div id="productivityTrend"></div>
+        </div>
+      </div>
+      <div class="weekly-summary">
+        <h3>Resumo Semanal Detalhado</h3>
+        <div id="weeklySummary"></div>
+      </div>
+      <div class="mood-history">
+        <h3>Histórico de Check-ins</h3>
+        <div id="moodHistory"></div>
+      </div>
+      <button onclick="closeDashboard()">Fechar Dashboard</button>
+    </div>
+
+    <button class="manager-button" onclick="toggleDashboard()">
+      Ver Dashboard
+    </button>
+
+    <script>
+      const participants = new Map();
+      let currentUser = null;
+      let currentMood = null;
+      let currentAvailability = null;
+      let moodHistory = [];
+
+      // Simulated weekly data
+      const weeklyData = [
+        {
+          username: 'Maria',
+          mood: '😊',
+          availability: 'available',
+          timestamp: '2024-01-22 09:00',
+          notes: 'Segunda-feira produtiva',
+        },
+        {
+          username: 'João',
+          mood: '😐',
+          availability: 'busy',
+          timestamp: '2024-01-22 10:30',
+          notes: 'Início de semana tranquilo',
+        },
+        {
+          username: 'Ana',
+          mood: '🤩',
+          availability: 'available',
+          timestamp: '2024-01-22 11:00',
+          notes: 'Muita energia',
+        },
+        {
+          username: 'Pedro',
+          mood: '😴',
+          availability: 'away',
+          timestamp: '2024-01-22 14:00',
+          notes: 'Cansado hoje',
+        },
+        {
+          username: 'Clara',
+          mood: '🤓',
+          availability: 'available',
+          timestamp: '2024-01-22 15:30',
+          notes: 'Focada nos projetos',
+        },
+
+        // Tuesday
+        {
+          username: 'Maria',
+          mood: '🤩',
+          availability: 'available',
+          timestamp: '2024-01-23 09:15',
+          notes: 'Dia produtivo',
+        },
+        {
+          username: 'João',
+          mood: '😊',
+          availability: 'available',
+          timestamp: '2024-01-23 10:00',
+          notes: 'Melhor que ontem',
+        },
+        {
+          username: 'Ana',
+          mood: '😐',
+          availability: 'busy',
+          timestamp: '2024-01-23 11:30',
+          notes: 'Dia normal',
+        },
+        {
+          username: 'Pedro',
+          mood: '😊',
+          availability: 'available',
+          timestamp: '2024-01-23 14:15',
+          notes: 'Mais disposto',
+        },
+        {
+          username: 'Clara',
+          mood: '😎',
+          availability: 'available',
+          timestamp: '2024-01-23 15:00',
+          notes: 'Excelente dia',
+        },
+
+        // Rest of the week...
+        {
+          username: 'Maria',
+          mood: '😊',
+          availability: 'available',
+          timestamp: '2024-01-24 09:00',
+          notes: 'Quarta produtiva',
+        },
+        {
+          username: 'João',
+          mood: '🤩',
+          availability: 'available',
+          timestamp: '2024-01-24 10:00',
+          notes: 'Ótimo dia',
+        },
+        {
+          username: 'Ana',
+          mood: '😊',
+          availability: 'available',
+          timestamp: '2024-01-25 09:30',
+          notes: 'Quinta-feira boa',
+        },
+        {
+          username: 'Pedro',
+          mood: '😎',
+          availability: 'available',
+          timestamp: '2024-01-25 11:00',
+          notes: 'Projetos encaminhados',
+        },
+        {
+          username: 'Clara',
+          mood: '🤓',
+          availability: 'available',
+          timestamp: '2024-01-26 09:00',
+          notes: 'Sexta-feira focada',
+        },
+      ];
+
+      function login() {
+        const username = document.getElementById('username').value;
+        const password = document.getElementById('password').value;
+
+        if (username && password) {
+          currentUser = username;
+          document.querySelector('.login-container').classList.remove('active');
+          document.querySelector('.mood-container').classList.add('active');
+          loadWeeklyData();
+        }
+      }
+
+      function selectAvailability(status) {
+        currentAvailability = status;
+        document.querySelectorAll('.availability-option').forEach((el) => {
+          el.classList.remove('selected');
+        });
+        const selectedOption = event.target;
+        selectedOption.classList.add('selected');
+
+        // Only proceed if a mood has been selected
+        if (currentMood) {
+          document.querySelector('.mood-container').classList.remove('active');
+          document.querySelector('.workspace').classList.add('active');
+          addParticipant(currentUser, currentMood, currentAvailability);
+          recordMood(currentUser, currentMood, currentAvailability);
+        }
+      }
+
+      function selectMood(emoji) {
+        if (!currentAvailability) {
+          alert('Por favor, selecione sua disponibilidade!');
+          return;
+        }
+        currentMood = emoji;
+        document.querySelector('.mood-container').classList.remove('active');
+        document.querySelector('.workspace').classList.add('active');
+        addParticipant(currentUser, currentMood, currentAvailability);
+        recordMood(currentUser, emoji, currentAvailability);
+      }
+
+      function recordMood(username, mood, availability) {
+        const timestamp = new Date().toLocaleString();
+        moodHistory.push({ username, mood, availability, timestamp });
+        updateDashboard();
+      }
+
+      function loadWeeklyData() {
+        moodHistory = [...weeklyData];
+        updateDashboard();
+      }
+
+      function updateDashboard() {
+        const generalMood = document.getElementById('generalMood');
+        generalMood.innerHTML = calculateGeneralMood();
+
+        const productivityStats = document.getElementById('productivityStats');
+        productivityStats.innerHTML = 'Sem dados de produtividade';
+
+        const moodStats = document.querySelector('.mood-stats');
+
+        // Add new chart containers
+        moodStats.innerHTML = `
+            <div class="mood-card">
+                <h3>Humor Geral da Semana</h3>
+                <div id="generalMood"></div>
+            </div>
+            <div class="mood-card">
+                <h3>Produtividade Média</h3>
+                <div id="productivityStats"></div>
+            </div>
+            <div class="mood-card">
+                <h3>Distribuição de Humor</h3>
+                <div id="moodDistribution"></div>
+            </div>
+            <div class="mood-card">
+                <h3>Tendência de Produtividade</h3>
+                <div id="productivityTrend"></div>
+            </div>
+        `;
+
+        document.getElementById('moodDistribution').innerHTML =
+          generateMoodDistributionChart();
+        document.getElementById('productivityTrend').innerHTML =
+          generateProductivityTrendChart();
+
+        const weeklySummary = document.getElementById('weeklySummary');
+        weeklySummary.innerHTML = generateWeeklySummary();
+
+        const history = document.getElementById('moodHistory');
+        history.innerHTML = moodHistory
+          .map(
+            (entry) => `
+            <div class="history-entry">
+                <strong>${entry.username}</strong>
+                <span>${entry.mood}</span>
+                <span>
+                    <div class="status-indicator" style="background-color: ${
+                      entry.availability === 'available'
+                        ? '#4CAF50'
+                        : entry.availability === 'busy'
+                        ? '#f44336'
+                        : '#ff9800'
+                    }"></div>
+                    ${
+                      entry.availability === 'available'
+                        ? 'Disponível'
+                        : entry.availability === 'busy'
+                        ? 'Ocupado'
+                        : 'Ausente'
+                    }
+                </span>
+                <span>${new Date(entry.timestamp).toLocaleString('pt-BR', {
+                  day: '2-digit',
+                  month: '2-digit',
+                  hour: '2-digit',
+                  minute: '2-digit',
+                })}</span>
+                <span>${entry.notes || '-'}</span>
+            </div>
+        `
+          )
+          .join('');
+      }
+
+      function calculateGeneralMood() {
+        if (moodHistory.length === 0) return 'Sem dados suficientes';
+        const moodMap = {
+          '😊': 5,
+          '🤩': 5,
+          '😎': 4,
+          '😐': 3,
+          '😴': 2,
+          '😢': 1,
+          '😤': 1,
+          '🤓': 4,
+        };
+        const average =
+          moodHistory.reduce((sum, entry) => sum + moodMap[entry.mood], 0) /
+          moodHistory.length;
+        if (average >= 4) return 'Muito Positivo 🤩';
+        if (average >= 3) return 'Positivo 😊';
+        if (average >= 2) return 'Neutro 😐';
+        return 'Precisa de Atenção 😢';
+      }
+
+      function generateWeeklySummary() {
+        const days = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta'];
+
+        let tableHTML = `
+            <table class="weekly-table">
+                <thead>
+                    <tr>
+                        <th>Dia</th>
+                        <th>Colaborador</th>
+                        <th>Horário</th>
+                        <th>Humor</th>
+                        <th>Status</th>
+                        <th>Observações</th>
+                    </tr>
+                </thead>
+                <tbody>
+        `;
+
+        days.forEach((day, index) => {
+          const dayEntries = moodHistory.filter((entry) => {
+            const date = new Date(entry.timestamp);
+            return date.getDay() === index + 1;
+          });
+
+          if (dayEntries.length === 0) {
+            tableHTML += `
+                    <tr>
+                        <td>${day}</td>
+                        <td colspan="5">Sem registros</td>
+                    </tr>
+                `;
+          } else {
+            dayEntries.forEach((entry, i) => {
+              const date = new Date(entry.timestamp);
+              const time = date.toLocaleTimeString('pt-BR', {
+                hour: '2-digit',
+                minute: '2-digit',
+              });
+
+              tableHTML += `
+                        <tr>
+                            ${
+                              i === 0
+                                ? `<td rowspan="${dayEntries.length}">${day}</td>`
+                                : ''
+                            }
+                            <td>${entry.username}</td>
+                            <td>${time}</td>
+                            <td class="mood-cell">${entry.mood}</td>
+                            <td>
+                                <div style="width: 20px; height: 20px; border-radius: 50%; background-color: ${
+                                  entry.availability === 'available'
+                                    ? '#4CAF50'
+                                    : entry.availability === 'busy'
+                                    ? '#f44336'
+                                    : '#ff9800'
+                                }"></div>
+                            </td>
+                            <td>${entry.notes || '-'}</td>
+                        </tr>
+                    `;
+            });
+          }
+        });
+
+        tableHTML += `
+                </tbody>
+            </table>
+        `;
+
+        return tableHTML;
+      }
+
+      function toggleDashboard() {
+        const dashboard = document.querySelector('.dashboard');
+        dashboard.classList.toggle('active');
+        updateDashboard();
+      }
+
+      function closeDashboard() {
+        document.querySelector('.dashboard').classList.remove('active');
+      }
+
+      function addParticipant(username, mood, availability) {
+        const participant = document.createElement('div');
+        participant.className = 'participant';
+        participant.innerHTML = `
+            <div class="status-ring ${availability}"></div>
+            <div class="avatar">
+                <svg width="50" height="50">
+                    <circle cx="25" cy="25" r="23" fill="#${Math.floor(
+                      Math.random() * 16777215
+                    ).toString(16)}"/>
+                    <text x="25" y="32" text-anchor="middle" fill="white" font-size="20">${username[0].toUpperCase()}</text>
+                </svg>
+            </div>
+            <span class="emoji">${mood}</span>
+        `;
+
+        // Set initial position
+        participant.style.position = 'absolute';
+        participant.style.left =
+          Math.random() * (window.innerWidth - 100) + 'px';
+        participant.style.top =
+          Math.random() * (window.innerHeight - 100) + 'px';
+
+        document.querySelector('.workspace').appendChild(participant);
+        participants.set(username, participant);
+
+        if (username === currentUser) {
+          setupMovement(participant);
+        }
+      }
+
+      function setupMovement(element) {
+        const speed = 10;
+        let posX = parseInt(element.style.left);
+        let posY = parseInt(element.style.top);
+
+        function moveElement(e) {
+          let newPosX = posX;
+          let newPosY = posY;
+
+          switch (e.key) {
+            case 'ArrowLeft':
+              newPosX = Math.max(0, posX - speed);
+              break;
+            case 'ArrowRight':
+              newPosX = Math.min(window.innerWidth - 100, posX + speed);
+              break;
+            case 'ArrowUp':
+              newPosY = Math.max(0, posY - speed);
+              break;
+            case 'ArrowDown':
+              newPosY = Math.min(window.innerHeight - 100, posY + speed);
+              break;
+            default:
+              return;
+          }
+
+          posX = newPosX;
+          posY = newPosY;
+          element.style.left = posX + 'px';
+          element.style.top = posY + 'px';
+          e.preventDefault(); // Prevent page scrolling
+        }
+
+        document.addEventListener('keydown', moveElement);
+      }
+
+      function generateMoodDistributionChart() {
+        const moodCounts = {};
+        moodHistory.forEach((entry) => {
+          moodCounts[entry.mood] = (moodCounts[entry.mood] || 0) + 1;
+        });
+
+        const total = Object.values(moodCounts).reduce((a, b) => a + b, 0);
+        let currentAngle = 0;
+
+        const svgContent = Object.entries(moodCounts)
+          .map(([mood, count]) => {
+            const percentage = (count / total) * 100;
+            const angle = (percentage / 100) * 360;
+            const x1 = Math.cos((currentAngle * Math.PI) / 180) * 80 + 100;
+            const y1 = Math.sin((currentAngle * Math.PI) / 180) * 80 + 100;
+            const x2 =
+              Math.cos(((currentAngle + angle) * Math.PI) / 180) * 80 + 100;
+            const y2 =
+              Math.sin(((currentAngle + angle) * Math.PI) / 180) * 80 + 100;
+            const largeArc = angle > 180 ? 1 : 0;
+
+            const slice = `
+                <path d="M100,100 L${x1},${y1} A80,80 0 ${largeArc},1 ${x2},${y2} Z" 
+                      fill="hsl(${currentAngle}, 70%, 60%)" />
+                <text x="${(x1 + x2) / 2}" y="${(y1 + y2) / 2}" 
+                      fill="white" text-anchor="middle">${mood} ${percentage.toFixed(
+              1
+            )}%</text>
+            `;
+
+            currentAngle += angle;
+            return slice;
+          })
+          .join('');
+
+        return `
+            <svg width="200" height="200" viewBox="0 0 200 200">
+                ${svgContent}
+            </svg>
+        `;
+      }
+
+      function generateProductivityTrendChart() {
+        // Create simulated productivity data based on mood and availability
+        const productivityData = moodHistory.map((entry) => {
+          // Calculate productivity score based on mood and availability
+          const moodScore =
+            {
+              '🤩': 5,
+              '😊': 4,
+              '😎': 4,
+              '🤓': 4,
+              '😐': 3,
+              '😴': 2,
+              '😢': 1,
+              '😤': 1,
+            }[entry.mood] || 3;
+
+          const availabilityScore = {
+            available: 1,
+            busy: 0.8,
+            away: 0.5,
+          }[entry.availability];
+
+          return {
+            date: new Date(entry.timestamp),
+            username: entry.username,
+            productivity: moodScore * availabilityScore,
+          };
+        });
+
+        // Group by day and calculate average
+        const dailyStats = {};
+        productivityData.forEach((entry) => {
+          const dateKey = entry.date.toLocaleDateString('pt-BR');
+          if (!dailyStats[dateKey]) {
+            dailyStats[dateKey] = {
+              sum: 0,
+              count: 0,
+              users: new Set(),
+              max: 0,
+              min: 5,
+            };
+          }
+
+          const stat = dailyStats[dateKey];
+          stat.sum += entry.productivity;
+          stat.count++;
+          stat.users.add(entry.username);
+          stat.max = Math.max(stat.max, entry.productivity);
+          stat.min = Math.min(stat.min, entry.productivity);
+        });
+
+        const width = 300;
+        const height = 200;
+        const padding = 40;
+        const availableWidth = width - padding * 2;
+        const availableHeight = height - padding * 2;
+
+        // Convert stats to array and sort by date
+        const dailyData = Object.entries(dailyStats)
+          .map(([date, stats]) => ({
+            date,
+            avg: stats.sum / stats.count,
+            max: stats.max,
+            min: stats.min,
+            participants: stats.users.size,
+          }))
+          .sort((a, b) => new Date(a.date) - new Date(b.date))
+          .slice(-5); // Last 5 days
+
+        const maxY = 5;
+        const points = dailyData.map((point, index) => ({
+          x: padding + index * (availableWidth / (dailyData.length - 1)),
+          y: height - (padding + (point.avg / maxY) * availableHeight),
+          yMax: height - (padding + (point.max / maxY) * availableHeight),
+          yMin: height - (padding + (point.min / maxY) * availableHeight),
+        }));
+
+        // Generate SVG
+        const svgContent = `
+            <svg width="${width}" height="${height}">
+                <!-- Grid lines -->
+                ${Array.from(
+                  { length: 6 },
+                  (_, i) => `
+                    <line x1="${padding}" y1="${
+                    height - padding - (i * availableHeight) / 5
+                  }"
+                          x2="${width - padding}" y2="${
+                    height - padding - (i * availableHeight) / 5
+                  }"
+                          stroke="#eee" stroke-width="1" />
+                    <text x="${padding - 5}" y="${
+                    height - padding - (i * availableHeight) / 5
+                  }"
+                          text-anchor="end" font-size="12" fill="#666">
+                        ${i}
+                    </text>
+                `
+                ).join('')}
+    
+                <!-- Range area -->
+                <path d="${
+                  points
+                    .map(
+                      (point, i) => `
+                    ${i === 0 ? 'M' : 'L'} ${point.x},${point.yMin}
+                `
+                    )
+                    .join(' ') +
+                  points
+                    .reverse()
+                    .map((point) => `L ${point.x},${point.yMax}`)
+                    .join(' ') +
+                  'Z'
+                }"
+                      fill="rgba(76, 175, 80, 0.1)" />
+    
+                <!-- Average line -->
+                <path d="${points
+                  .reverse()
+                  .map(
+                    (point, i) =>
+                      (i === 0 ? 'M' : 'L') + `${point.x},${point.y}`
+                  )
+                  .join(' ')}"
+                      stroke="#4CAF50" stroke-width="3" fill="none" />
+    
+                <!-- Data points -->
+                ${points
+                  .map(
+                    (point, index) => `
+                    <circle cx="${point.x}" cy="${
+                      point.y
+                    }" r="5" fill="#4CAF50" />
+                    <text x="${point.x}" y="${height - 5}" 
+                          text-anchor="middle" font-size="12" fill="#666">
+                        ${new Date(dailyData[index].date).toLocaleDateString(
+                          'pt-BR',
+                          { weekday: 'short' }
+                        )}
+                    </text>
+                    <!-- Participant count -->
+                    <text x="${point.x}" y="${point.y - 15}"
+                          text-anchor="middle" font-size="10" fill="#666">
+                        ${dailyData[index].participants} pessoas
+                    </text>
+                `
+                  )
+                  .join('')}
+    
+                <!-- Legend -->
+                <rect x="${width - padding - 100}" y="10" width="90" height="50"
+                      fill="white" stroke="#ddd" />
+                <text x="${
+                  width - padding - 90
+                }" y="25" font-size="10" fill="#666">
+                    ⬤ Média diária
+                </text>
+                <text x="${
+                  width - padding - 90
+                }" y="40" font-size="10" fill="#666">
+                    □ Variação min/max
+                </text>
+            </svg>
+        `;
+
+        return svgContent;
+      }
+    </script>
+  </body>
+</html>
